@@ -26,7 +26,7 @@ It is deployed as an interactive **Streamlit web application**, where users can 
 
 ## 🌐 Live Demo
 🔗 Click here to try the app  
-👉 *Add your Streamlit link here after deployment*
+👉 [Movie Recommender System](https://movie-recommender-system-4q6e6etkfeut3mtrahvt9j.streamlit.app/)
 
 ---
 
@@ -39,4 +39,9 @@ It is deployed as an interactive **Streamlit web application**, where users can 
 
 ---
 
+## ✨ Author
+👤 **Siddiqui Usman Ahmed Siraj Ahmed**  
 
+📧 siddiquiusman915256@gmail.com  
+
+🔗 [LinkedIn Profile](https://www.linkedin.com/in/usman-siddiqui-948006347) 
