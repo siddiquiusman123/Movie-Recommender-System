@@ -2,12 +2,26 @@ import joblib
 import streamlit as st
 import requests
 import pandas as pd
+import gdown
+import os
+
+file_id = "18sIsXqGyDINfrIdk-wX5QeCI1YwRoKc9"
+url = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+# Download only if the file doesn't exist
+if not os.path.exists("similarity.pkl"):
+    with st.spinner("Downloading similarity model..."):
+        gdown.download(url, "similarity.pkl", quiet=False)
+        st.success("Model downloaded successfully!")
 
 st.header('Movie Recommender System')
 movies_list = joblib.load("movies_dict.pkl")
 movies = pd.DataFrame(movies_list)
 
-similarity = joblib.load("similarity.pkl")
+try:
+    similarity = joblib.load("similarity.pkl")
+except FileNotFoundError:
+    st.error("Failed to load similarity model. Please check the download.")
 movie_list = movies['title'].values
 selected_movie = st.selectbox(
     "Type or select a movie from the dropdown",
