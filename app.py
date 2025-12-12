@@ -2,47 +2,66 @@ import joblib
 import streamlit as st
 import requests
 import pandas as pd
+import os
 
-st.header('Movie Recommender System')
+st.header("Movie Recommender System")
 
+# Load data
 similarity = joblib.load("similarity.pkl")
 movies_list = joblib.load("movies_dict.pkl")
 movies = pd.DataFrame(movies_list)
 
-movie_list = movies['title'].values
-selected_movie = st.selectbox(
-    "Type or select a movie from the dropdown",
-    movie_list
-)
+movie_list = movies["title"].values
+selected_movie = st.selectbox("Search for a movie", movie_list)
+
+# Secure API Key (avoid hardcoding)
+TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
 def fetch_poster(movie_id):
-    url = "https://api.themoviedb.org/3/movie/{}?api_key=c5186a5eecc1cd93c187a87726e66f52&language=en-US".format(movie_id)
-    data = requests.get(url)
-    data = data.json()
-    poster_path = data['poster_path']
-    full_path = "https://image.tmdb.org/t/p/w500/" + poster_path
-    return full_path
+    if not TMDB_API_KEY:
+        return None
+    
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={TMDB_API_KEY}&language=en-US"
+    
+    try:
+        data = requests.get(url, timeout=5).json()
+        poster_path = data.get("poster_path")
+        if not poster_path:
+            return None
+        return "https://image.tmdb.org/t/p/w500/" + poster_path
+    except Exception:
+        return None
+
 
 def recommend(movie):
-    index = movies[movies['title'] == movie].index[0]
-    distances = sorted(list(enumerate(similarity[index])), reverse=True, key=lambda x: x[1])
-    recommended_movie_names = []
-    recommended_movie_posters = []
-    for i in distances[1:6]:
-        # fetch the movie poster
-        movie_id = movies.iloc[i[0]].id
-        recommended_movie_posters.append(fetch_poster(movie_id))
-        recommended_movie_names.append(movies.iloc[i[0]].title)
+    if movie not in movies["title"].values:
+        return [], []
 
-    return recommended_movie_names,recommended_movie_posters
+    index = movies[movies["title"] == movie].index[0]
+
+    # Faster top-5 extraction
+    similarity_scores = similarity[index]
+    top_indices = similarity_scores.argsort()[::-1][1:6]
+
+    names = []
+    posters = []
+
+    for idx in top_indices:
+        movie_id = movies.iloc[idx].id
+        names.append(movies.iloc[idx].title)
+        posters.append(fetch_poster(movie_id))
+
+    return names, posters
 
 
-if st.button('Show Recommendation'):
-    recommended_movie_names, recommended_movie_posters = recommend(selected_movie)
+if st.button("Show Recommendation"):
+    names, posters = recommend(selected_movie)
 
-    num_cols = len(recommended_movie_names)
-    cols = st.columns(num_cols)
-
-    for i, col in enumerate(cols):
-        col.image(recommended_movie_posters[i], use_container_width=True)
-        col.caption(recommended_movie_names[i])
+    if not names:
+        st.error("No recommendations found.")
+    else:
+        cols = st.columns(5)
+        for i, col in enumerate(cols):
+            if i < len(names):
+                col.image(posters[i] or "https://via.placeholder.com/500", use_container_width=True)
+                col.caption(names[i])
